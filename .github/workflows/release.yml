@@ -19,19 +19,22 @@ jobs:
         with:
           python-version: '3.10'
 
-      # 3. 运行打包脚本（生成 release/ 文件夹）
-        name: 安装 zip（关键修复）
+      # 3. 安装 zip（关键修复）
+      - name: 安装 zip（关键修复）
         run: sudo apt-get update && sudo apt-get install -y zip
+
+      # 4. 运行打包脚本（生成 release/ 文件夹）
       - name: 执行打包脚本
         run: python build.py
 
-      # 4. 压缩为 zip（方便上传）
+      # 5. 压缩为 zip（方便上传）
       - name: 压缩为 zip
         run: cd release && zip -r ../graph-calculator.zip ./*
 
-      # 5. 发布到 GitHub Releases
+      # 6. 发布到 GitHub Releases
       - name: 发布到 GitHub Releases
         uses: softprops/action-gh-release@v1
         with:
           files: graph-calculator.zip  # 上传的文件名
+
 
