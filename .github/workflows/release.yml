@@ -1,0 +1,35 @@
+name: 自动打包发布
+
+on:
+  push:
+    tags:
+      - 'v*'  # 只有推送 v 开头的标签时才会触发，比如 v1.0, v1.1
+
+jobs:
+  build:
+    runs-on: ubuntu-latest  # 使用 Ubuntu 服务器来打包
+    
+    steps:
+      # 1. 拉取你的代码
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      # 2. 安装 Python 环境
+      - name: 安装 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      # 3. 运行你的打包脚本
+      - name: 执行本地打包脚本
+        run: python build.py
+
+      # 4. 把打包好的 release 文件夹压缩成 zip
+      - name: 压缩为 zip
+        run: cd release && zip -r ../graph-calculator.zip ./*
+
+      # 5. 自动创建 Release 并上传 zip
+      - name: 发布到 GitHub Releases
+        uses: softprops/action-gh-release@v1
+        with:
+          files: graph-calculator.zip
