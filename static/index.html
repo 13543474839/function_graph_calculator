@@ -608,7 +608,7 @@ function drawCurve(points, color) {
     let drawing = false;
     ctx.beginPath();
     for (const p of points) {
-        if (p.y === null || isNaN(p.y))//把null当nan处理处理，解决反函数返回过多nan问题
+        if (p.y === null || isFinite(p.y))//把null当nan处理处理，解决反函数返回过多nan问题,isfinite解决指数函数在负数时返回inf问题
          {
             drawing = false;
             continue;
