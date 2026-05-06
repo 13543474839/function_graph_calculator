@@ -607,9 +607,9 @@ function drawCurve(points, color) {
 
     let drawing = false;
     ctx.beginPath();
-
     for (const p of points) {
-        if (isNaN(p.y)) {
+        if (p.y === null || isNaN(p.y))//把null当nan处理处理，解决反函数返回过多nan问题
+         {
             drawing = false;
             continue;
         }
@@ -720,7 +720,7 @@ function updateTooltip(e) {
     // 找到距离鼠标最近的曲线点
     for (const item of expressions) {
         for (const p of item.points) {
-            if (isNaN(p.y)) continue;
+            if (p.y === null || isNaN(p.y)) continue;//把null当nan处理处理，解决反函数返回过多nan问题
             const sy = toScreenY(p.y);
             const dist = Math.abs(sy - my);
             if (dist < closestDist && dist < 30) {  // 30像素以内才算"靠近"

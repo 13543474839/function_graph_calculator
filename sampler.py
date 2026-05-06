@@ -36,6 +36,10 @@ def generate_points(
         # 过滤掉无穷大的值，保留 NaN（NaN 用于断线）
         if math.isinf(y):
             y = float("nan")
+        
+         # ← 加这一行：NaN 转成 None，JSON 会序列化成 null（处理反正弦和反余弦函数返回过多nan）
+        if math.isnan(y):
+            y = None
 
         points.append({"x": round(x, 6), "y": y})
 
