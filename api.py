@@ -43,7 +43,7 @@ def get_presets():
             # 幂函数 a > 1
             {"name": "x^2",      "expr": "x^2"},
             # 幂函数 0 < a < 1
-            {"name": "sqrt(x)",  "expr": "sqrt(abs(x))"},
+            {"name": "sqrt(x)",  "expr": "sqrt(x)"},
             # 幂函数 a < 0
             {"name": "1/x",      "expr": "1/x"},
             # 三角函数
