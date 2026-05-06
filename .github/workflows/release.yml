@@ -3,7 +3,7 @@ name: 自动打包发布
 on:
   push:
     tags:
-      - 'v*'  # 仅当推送 v 开头的标签时触发（如 v1.0、v1.1）
+      - 'v*'  # 仅当推送 v 开头的标签时触发
 
 jobs:
   build:
@@ -11,16 +11,16 @@ jobs:
     steps:
       # 1. 拉取代码
       - name: 拉取代码
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4  # 支持 Node.js 24
 
       # 2. 安装 Python 环境
       - name: 安装 Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6  # 升级到 v6，支持 Node.js 24
         with:
           python-version: '3.10'
 
       # 3. 安装 zip（关键修复）
-      - name: 安装 zip（关键修复）
+      - name: 安装 zip
         run: sudo apt-get update && sudo apt-get install -y zip
 
       # 4. 运行打包脚本（生成 release/ 文件夹）
@@ -31,10 +31,17 @@ jobs:
       - name: 压缩为 zip
         run: cd release && zip -r ../graph-calculator.zip ./*
 
-      # 6. 发布到 GitHub Releases
+      # 6. 安装 GitHub CLI（用于发布）
+      - name: 安装 GitHub CLI
+        run: sudo apt-get install -y gh  # 安装官方 CLI 工具
+
+      # 7. 发布到 GitHub Releases（替代 softprops/action-gh-release@v1）
       - name: 发布到 GitHub Releases
-        uses: softprops/action-gh-release@v1
-        with:
-          files: graph-calculator.zip  # 上传的文件名
+        run: |
+          # 使用 GitHub CLI 创建发布并上传文件
+          gh release create ${{ github.ref_name }} graph-calculator.zip \
+            --title "Release ${{ github.ref_name }}" \
+            --notes "Auto-generated release by GitHub Actions"
+
 
 
