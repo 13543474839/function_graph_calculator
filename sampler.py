@@ -27,21 +27,23 @@ def generate_points(
     # 第2步：计算 x 的步长（均匀采样）
     step = (x_max - x_min) / (num_points - 1)
 
-    # 第3步：逐个计算每个 x 对应的 y
+        # 第3步：逐个计算每个 x 对应的 y
     points = []
     for i in range(num_points):
         x = x_min + i * step
-        y = f(x)
+        try:                                # ✅ 只保护这一次计算
+            y = f(x)
+        except (ZeroDivisionError, ValueError, OverflowError, ArithmeticError):
+            y = float("nan")               # 算不出来就当 NaN 处理
 
         # 过滤掉无穷大的值，保留 NaN（NaN 用于断线）
         if math.isinf(y):
             y = float("nan")
-        
-         # ← 加这一行：NaN 转成 None，JSON 会序列化成 null（处理反正弦和反余弦函数返回过多nan）
+        # NaN 转成 None，JSON 会序列化成 null
         if math.isnan(y):
             y = None
-
         points.append({"x": round(x, 6), "y": y})
+
 
     return points
 
