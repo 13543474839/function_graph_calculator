@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图形计算器 - 数据可视化课程设计</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+SC:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        /* ====== 设计变量 ====== */
+        :root {
+            --bg: #0d172a;
+            --bg-card: #111827;
+            --bg-input: #1a2235;
+            --fg: #e8ecf4;
+            --fg-muted: #6b7a94;
+            --accent: #8a91ef;
+            --accent-glow: rgba(87, 45, 227, 0.15);
+            --danger: #ff4d6a;
+            --border: #1e2a3f;
+            --radius: 10px;
+            --font-ui: 'Noto Sans SC', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-ui);
+            background: var(--bg);
+            color: var(--fg);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ====== 整体布局：左侧控制面板 + 右侧画布 ====== */
+        .app {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* ====== 左侧面板 ====== */
+        .panel {
+            width: 340px;
+            min-width: 340px;
+            background: var(--bg-card);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .panel-header {
+            padding: 24px 20px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .panel-header h1 {
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: var(--fg);
+        }
+
+        .panel-header p {
+            font-size: 12px;
+            color: var(--fg-muted);
+            margin-top: 4px;
+        }
+
+        /* 表达式输入区 */
+        .expr-section {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .expr-section label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--fg-muted);
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .expr-input-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .expr-input {
+            flex: 1;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 10px 14px;
+            color: var(--fg);
+            font-family: var(--font-mono);
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .expr-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .btn-add {
+            background: var(--accent);
+            color: var(--bg);
+            border: none;
+            border-radius: var(--radius);
+            padding: 0 16px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            transition: transform 0.15s, opacity 0.15s;
+            white-space: nowrap;
+        }
+
+        .btn-add:hover { opacity: 0.85; }
+        .btn-add:active { transform: scale(0.96); }
+
+        /* 表达式列表 */
+        .expr-list {
+            padding: 12px 20px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .expr-list-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--fg-muted);
+            margin-bottom: 8px;
+        }
+
+        .expr-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: var(--bg-input);
+            border-radius: 8px;
+            margin-bottom: 6px;
+            transition: background 0.15s;
+        }
+
+        .expr-item:hover { background: #1f2b42; }
+
+        .expr-color-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .expr-item-text {
+            flex: 1;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .expr-item-del {
+            background: none;
+            border: none;
+            color: var(--fg-muted);
+            cursor: pointer;
+            font-size: 12px;
+            padding: 4px;
+            border-radius: 4px;
+            transition: color 0.15s, background 0.15s;
+        }
+
+        .expr-item-del:hover {
+            color: var(--danger);
+            background: rgba(255, 77, 106, 0.1);
+        }
+
+        /* 预设区 */
+        .preset-section {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .preset-section label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--fg-muted);
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .preset-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .preset-btn {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 5px 10px;
+            color: var(--fg-muted);
+            font-size: 11px;
+            font-family: var(--font-mono);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .preset-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        /* 错误提示 */
+        .error-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #2a0f16;
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            padding: 12px 20px;
+            border-radius: var(--radius);
+            font-size: 13px;
+            z-index: 999;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s;
+            pointer-events: none;
+        }
+
+        .error-toast.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ====== 右侧画布区域 ====== */
+        .canvas-area {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* 坐标悬浮提示 */
+        .coord-tooltip {
+            position: absolute;
+            background: rgba(17, 24, 39, 0.92);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--fg);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s;
+            white-space: nowrap;
+            z-index: 10;
+        }
+
+        .coord-tooltip.visible { opacity: 1; }
+
+        .coord-tooltip .val {
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        /* 底部状态栏 */
+        .status-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 8px 16px;
+            background: rgba(10, 14, 23, 0.8);
+            border-top: 1px solid var(--border);
+            font-size: 11px;
+            color: var(--fg-muted);
+            display: flex;
+            justify-content: space-between;
+            backdrop-filter: blur(8px);
+        }
+
+        /* 背景装饰 */
+        .canvas-area::before {
+            content: '';
+            position: absolute;
+            top: -200px;
+            right: -200px;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* 空状态 */
+        .empty-hint {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: var(--fg-muted);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .empty-hint i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+
+        .empty-hint p {
+            font-size: 14px;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app">
+    <!-- 左侧控制面板 -->
+    <aside class="panel">
+        <div class="panel-header">
+            <h1>图形计算器</h1>
+            <p>后端计算 · 前端可视化 · 数据可视化课程设计</p>
+        </div>
+
+        <div class="expr-section">
+            <label>输入表达式</label>
+            <div class="expr-input-row">
+                <input class="expr-input" id="exprInput" type="text"
+                       placeholder="例如 sin(x), x^2+1"
+                       autocomplete="off" spellcheck="false">
+                <button class="btn-add" id="btnAdd">绘制</button>
+            </div>
+        </div>
+
+        <div class="expr-list" id="exprList">
+            <div class="expr-list-title">已添加的曲线</div>
+            <div id="exprListContent"></div>
+        </div>
+
+        <div class="preset-section">
+            <label>快捷预设</label>
+            <div class="preset-grid" id="presetGrid"></div>
+        </div>
+    </aside>
+
+    <!-- 右侧画布 -->
+    <main class="canvas-area">
+        <canvas id="graphCanvas"></canvas>
+        <div class="coord-tooltip" id="tooltip"></div>
+        <div class="empty-hint" id="emptyHint">
+            <i class="fas fa-chart-line"></i>
+            <p>在左侧输入表达式开始绘图</p>
+        </div>
+        <div class="status-bar">
+            <span id="statusLeft">滚轮缩放 · 拖拽平移 · 靠近曲线查看坐标</span>
+            <span id="statusRight"></span>
+        </div>
+    </main>
+</div>
+
+<div class="error-toast" id="errorToast"></div>
+
+<script>
+// ============================================================
+// 前端 JavaScript —— 只负责两件事：
+//   1. 向后端请求数据（调用 API）
+//   2. 把数据画到 Canvas 上（可视化）
+// ============================================================
+
+// ---------- 配置 ----------
+const API_BASE = "http://localhost:8000";  // 后端地址
+const CURVE_COLORS = [
+    "#00e89d", "#ff6b6b", "#4ecdc4", "#ffd93d",
+    "#a78bfa", "#f472b6", "#38bdf8", "#fb923c",
+];
+
+// ---------- 状态 ----------
+let expressions = [];   // [{expr: "sin(x)", points: [...], color: "#00e89d"}]
+let view = { xMin: -10, xMax: 10, yMin: -6, yMax: 6 };
+let isDragging = false;
+let dragStart = { x: 0, y: 0 };
+let dragViewStart = {};
+
+// ---------- DOM 元素 ----------
+const canvas = document.getElementById("graphCanvas");
+const ctx = canvas.getContext("2d");
+const exprInput = document.getElementById("exprInput");
+const btnAdd = document.getElementById("btnAdd");
+const exprListContent = document.getElementById("exprListContent");
+const presetGrid = document.getElementById("presetGrid");
+const tooltip = document.getElementById("tooltip");
+const emptyHint = document.getElementById("emptyHint");
+const errorToast = document.getElementById("errorToast");
+const statusRight = document.getElementById("statusRight");
+
+// ============================================================
+// 模块A：与后端通信（发请求、拿数据）
+// ============================================================
+
+async function fetchPoints(expr, xMin, xMax) {
+    // 向后端 API 发 GET 请求，拿到坐标点数据
+    const url = `${API_BASE}/api/plot?expr=${encodeURIComponent(expr)}&x_min=${xMin}&x_max=${xMax}&points=800`;
+    const resp = await fetch(url);
+    const data = await resp.json();
+
+    if (data.error) {
+        throw new Error(data.error);
+    }
+    return data.points;
+}
+
+async function fetchPresets() {
+    // 获取预设表达式列表
+    const resp = await fetch(`${API_BASE}/api/presets`);
+    const data = await resp.json();
+    return data.presets;
+}
+
+// ============================================================
+// 模块B：Canvas 绘图（把坐标点画成曲线）
+// ============================================================
+
+function resizeCanvas() {
+    // 让 Canvas 的像素尺寸匹配显示尺寸（高清屏适配）
+    const rect = canvas.parentElement.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    draw();
+}
+
+// 数学坐标 → 屏幕像素
+function toScreenX(x) {
+    const w = canvas.width / (window.devicePixelRatio || 1);
+    return (x - view.xMin) / (view.xMax - view.xMin) * w;
+}
+function toScreenY(y) {
+    const h = canvas.height / (window.devicePixelRatio || 1);
+    return (1 - (y - view.yMin) / (view.yMax - view.yMin)) * h;
+}
+// 屏幕像素 → 数学坐标
+function toMathX(sx) {
+    const w = canvas.width / (window.devicePixelRatio || 1);
+    return view.xMin + sx / w * (view.xMax - view.xMin);
+}
+function toMathY(sy) {
+    const h = canvas.height / (window.devicePixelRatio || 1);
+    return view.yMax - sy / h * (view.yMax - view.yMin);
+}
+
+function draw() {
+    const w = canvas.width / (window.devicePixelRatio || 1);
+    const h = canvas.height / (window.devicePixelRatio || 1);
+
+    // 清空
+    ctx.clearRect(0, 0, w, h);
+
+    // 背景
+    ctx.fillStyle = "#0a0e17";
+    ctx.fillRect(0, 0, w, h);
+
+    // 计算合适的网格间距
+    const gridStep = calcGridStep(view.xMax - view.xMin, w);
+
+    // 画网格线
+    drawGrid(w, h, gridStep);
+
+    // 画坐标轴
+    drawAxes(w, h);
+
+    // 画每条曲线
+    for (const item of expressions) {
+        drawCurve(item.points, item.color);
+    }
+
+    // 空状态提示
+    emptyHint.style.display = expressions.length === 0 ? "block" : "none";
+}
+
+function calcGridStep(range, pixelWidth) {
+    // 根据视野范围自动选择网格间距（1, 2, 5 的倍数）
+    const targetPixels = 80;  // 希望网格线之间大约 80 像素
+    const rawStep = range / (pixelWidth / targetPixels);
+    const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
+    const norm = rawStep / mag;
+    let step;
+    if (norm < 1.5) step = 1;
+    else if (norm < 3.5) step = 2;
+    else if (norm < 7.5) step = 5;
+    else step = 10;
+    return step * mag;
+}
+
+function drawGrid(w, h, step) {
+    ctx.strokeStyle = "rgba(30, 42, 63, 0.6)";
+    ctx.lineWidth = 0.5;
+
+    // 竖线
+    let xStart = Math.ceil(view.xMin / step) * step;
+    for (let x = xStart; x <= view.xMax; x += step) {
+        const sx = toScreenX(x);
+        ctx.beginPath();
+        ctx.moveTo(sx, 0);
+        ctx.lineTo(sx, h);
+        ctx.stroke();
+    }
+
+    // 横线
+    let yStart = Math.ceil(view.yMin / step) * step;
+    for (let y = yStart; y <= view.yMax; y += step) {
+        const sy = toScreenY(y);
+        ctx.beginPath();
+        ctx.moveTo(0, sy);
+        ctx.lineTo(w, sy);
+        ctx.stroke();
+    }
+}
+
+function drawAxes(w, h) {
+    ctx.strokeStyle = "rgba(107, 122, 148, 0.5)";
+    ctx.lineWidth = 1;
+
+    // X 轴
+    if (view.yMin <= 0 && view.yMax >= 0) {
+        const sy = toScreenY(0);
+        ctx.beginPath();
+        ctx.moveTo(0, sy);
+        ctx.lineTo(w, sy);
+        ctx.stroke();
+    }
+
+    // Y 轴
+    if (view.xMin <= 0 && view.xMax >= 0) {
+        const sx = toScreenX(0);
+        ctx.beginPath();
+        ctx.moveTo(sx, 0);
+        ctx.lineTo(sx, h);
+        ctx.stroke();
+    }
+
+    // 刻度数字
+    ctx.fillStyle = "rgba(107, 122, 148, 0.7)";
+    ctx.font = "11px 'JetBrains Mono', monospace";
+
+    const step = calcGridStep(view.xMax - view.xMin, w);
+    let xStart = Math.ceil(view.xMin / step) * step;
+
+    for (let x = xStart; x <= view.xMax; x += step) {
+        if (Math.abs(x) < step * 0.01) continue;  // 跳过原点
+        const sx = toScreenX(x);
+        const axisY = (view.yMin <= 0 && view.yMax >= 0) ? toScreenY(0) : h - 16;
+        ctx.fillText(formatNum(x), sx + 4, axisY - 4);
+    }
+
+    let yStart2 = Math.ceil(view.yMin / step) * step;
+    for (let y = yStart2; y <= view.yMax; y += step) {
+        if (Math.abs(y) < step * 0.01) continue;
+        const sy = toScreenY(y);
+        const axisX = (view.xMin <= 0 && view.xMax >= 0) ? toScreenX(0) : 8;
+        ctx.fillText(formatNum(y), axisX + 6, sy - 4);
+    }
+}
+
+function formatNum(n) {
+    // 数字格式化，避免浮点尾巴
+    if (Math.abs(n) >= 1000) return n.toExponential(1);
+    return parseFloat(n.toPrecision(6)).toString();
+}
+
+function drawCurve(points, color) {
+    // 把后端返回的坐标点画成平滑曲线
+    // 关键：遇到 NaN 时断开，避免把不连续的点连起来
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+
+    // 发光效果
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 8;
+
+    let drawing = false;
+    ctx.beginPath();
+
+    for (const p of points) {
+        if (isNaN(p.y)) {
+            drawing = false;
+            continue;
+        }
+
+        const sx = toScreenX(p.x);
+        const sy = toScreenY(p.y);
+
+        // 超出屏幕太远的点也跳过（避免绘制大线段）
+        const h = canvas.height / (window.devicePixelRatio || 1);
+        if (sy < -2000 || sy > h + 2000) {
+            drawing = false;
+            continue;
+        }
+
+        if (!drawing) {
+            ctx.moveTo(sx, sy);
+            drawing = true;
+        } else {
+            ctx.lineTo(sx, sy);
+        }
+    }
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+}
+
+// ============================================================
+// 模块C：交互（缩放、平移、坐标提示）
+// ============================================================
+
+// 鼠标滚轮缩放
+canvas.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+
+    // 鼠标位置对应的数学坐标
+    const mathX = toMathX(mx);
+    const mathY = toMathY(my);
+
+    // 缩放比例
+    const factor = e.deltaY > 0 ? 1.12 : 1 / 1.12;
+
+    // 以鼠标位置为中心缩放
+    view.xMin = mathX - (mathX - view.xMin) * factor;
+    view.xMax = mathX + (view.xMax - mathX) * factor;
+    view.yMin = mathY - (mathY - view.yMin) * factor;
+    view.yMax = mathY + (view.yMax - mathY) * factor;
+
+    draw();
+    refetchAll();  // 缩放后重新向后端要数据（因为采样范围变了）
+}, { passive: false });
+
+// 拖拽平移
+canvas.addEventListener("mousedown", (e) => {
+    isDragging = true;
+    dragStart = { x: e.clientX, y: e.clientY };
+    dragViewStart = { ...view };
+    canvas.style.cursor = "grabbing";
+});
+
+window.addEventListener("mousemove", (e) => {
+    if (isDragging) {
+        const rect = canvas.getBoundingClientRect();
+        const dx = e.clientX - dragStart.x;
+        const dy = e.clientY - dragStart.y;
+
+        const mathDx = -dx / rect.width * (dragViewStart.xMax - dragViewStart.xMin);
+        const mathDy = dy / rect.height * (dragViewStart.yMax - dragViewStart.yMin);
+
+        view.xMin = dragViewStart.xMin + mathDx;
+        view.xMax = dragViewStart.xMax + mathDx;
+        view.yMin = dragViewStart.yMin + mathDy;
+        view.yMax = dragViewStart.yMax + mathDy;
+
+        draw();
+    }
+
+    // 坐标提示
+    updateTooltip(e);
+});
+
+window.addEventListener("mouseup", () => {
+    if (isDragging) {
+        isDragging = false;
+        canvas.style.cursor = "crosshair";
+        refetchAll();  // 平移后重新要数据
+    }
+});
+
+canvas.style.cursor = "crosshair";
+
+function updateTooltip(e) {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+
+    // 鼠标不在画布上就隐藏
+    if (mx < 0 || my < 0 || mx > rect.width || my > rect.height) {
+        tooltip.classList.remove("visible");
+        return;
+    }
+
+    const mathX = toMathX(mx);
+    let closestDist = Infinity;
+    let closestInfo = null;
+
+    // 找到距离鼠标最近的曲线点
+    for (const item of expressions) {
+        for (const p of item.points) {
+            if (isNaN(p.y)) continue;
+            const sy = toScreenY(p.y);
+            const dist = Math.abs(sy - my);
+            if (dist < closestDist && dist < 30) {  // 30像素以内才算"靠近"
+                closestDist = dist;
+                closestInfo = { x: p.x, y: p.y, color: item.color, expr: item.expr };
+            }
+        }
+    }
+
+    if (closestInfo) {
+        tooltip.innerHTML = `
+            <span style="color:${closestInfo.color}">${closestInfo.expr}</span><br>
+            x = <span class="val">${closestInfo.x.toFixed(4)}</span><br>
+            y = <span class="val">${closestInfo.y.toFixed(4)}</span>
+        `;
+        tooltip.style.left = (mx + 16) + "px";
+        tooltip.style.top = (my - 10) + "px";
+        tooltip.classList.add("visible");
+        statusRight.textContent = `x: ${closestInfo.x.toFixed(4)}  y: ${closestInfo.y.toFixed(4)}`;
+    } else {
+        tooltip.classList.remove("visible");
+        statusRight.textContent = `x: ${mathX.toFixed(4)}`;
+    }
+}
+
+// ============================================================
+// 模块D：表达式管理（添加、删除、列表渲染）
+// ============================================================
+
+async function addExpression(expr) {
+    expr = expr.trim();
+    if (!expr) return;
+
+    // 检查重复
+    if (expressions.some(item => item.expr === expr)) {
+        showError("该表达式已存在");
+        return;
+    }
+
+    try {
+        // 调用后端 API 获取坐标点
+        const points = await fetchPoints(expr, view.xMin, view.xMax);
+        const color = CURVE_COLORS[expressions.length % CURVE_COLORS.length];
+        expressions.push({ expr, points, color });
+        renderExprList();
+        draw();
+        exprInput.value = "";
+    } catch (err) {
+        showError(err.message);
+    }
+}
+
+function removeExpression(index) {
+    expressions.splice(index, 1);
+    // 重新分配颜色
+    expressions.forEach((item, i) => {
+        item.color = CURVE_COLORS[i % CURVE_COLORS.length];
+    });
+    renderExprList();
+    draw();
+}
+
+function renderExprList() {
+    exprListContent.innerHTML = expressions.map((item, i) => `
+        <div class="expr-item">
+            <span class="expr-color-dot" style="background:${item.color}"></span>
+            <span class="expr-item-text" title="${item.expr}">${item.expr}</span>
+            <button class="expr-item-del" onclick="removeExpression(${i})">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `).join("");
+}
+
+// 缩放/平移后，重新从后端获取所有表达式的数据
+async function refetchAll() {
+    for (const item of expressions) {
+        try {
+            item.points = await fetchPoints(item.expr, view.xMin, view.xMax);
+        } catch (e) {
+            // 静默失败，保留旧数据
+        }
+    }
+    draw();
+}
+
+// ============================================================
+// 模块E：预设按钮加载
+// ============================================================
+
+async function loadPresets() {
+    try {
+        const presets = await fetchPresets();
+        presetGrid.innerHTML = presets.map(p => `
+            <button class="preset-btn" onclick="addExpression('${p.expr}')">${p.name}</button>
+        `).join("");
+    } catch (e) {
+        // 后端没启动时显示兜底预设
+        const fallback = [
+            {name:"sin(x)", expr:"sin(x)"}, {name:"x^2", expr:"x^2"},
+            {name:"cos(x)", expr:"cos(x)"}, {name:"exp(x)", expr:"exp(x/3)"},
+            {name:"1/x", expr:"1/x"}, {name:"sqrt(x)", expr:"sqrt(abs(x))"},
+        ];
+        presetGrid.innerHTML = fallback.map(p => `
+            <button class="preset-btn" onclick="addExpression('${p.expr}')">${p.name}</button>
+        `).join("");
+    }
+}
+
+// ============================================================
+// 工具函数
+// ============================================================
+
+function showError(msg) {
+    errorToast.textContent = msg;
+    errorToast.classList.add("visible");
+    setTimeout(() => errorToast.classList.remove("visible"), 3000);
+}
+
+// ============================================================
+// 初始化
+// ============================================================
+
+btnAdd.addEventListener("click", () => addExpression(exprInput.value));
+exprInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") addExpression(exprInput.value);
+});
+
+window.addEventListener("resize", resizeCanvas);
+resizeCanvas();
+loadPresets();
+</script>
+
+</body>
+</html>
