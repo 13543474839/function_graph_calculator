@@ -1,5 +1,6 @@
 # API 接口将函数解析器和坐标点生成器组合在一起，提供一个简单的接口，供用户调用。
 from fastapi import FastAPI, Query
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from sampler import generate_points
 
@@ -11,6 +12,19 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+try:
+    # 开发模式：从文件读取（改 HTML 后刷新即生效）
+    with open("static/index.html", "r", encoding="utf-8") as f:
+        _HTML = f.read()
+except FileNotFoundError:
+    # 发布模式：内嵌版本（单文件也能跑）
+    _HTML = "{{HTML_PLACEHOLDER}}"
+
+@app.get("/")
+async def serve_index():
+    return HTMLResponse(_HTML)
+
 #接受表达式返回坐标点列表的接口
 @app.get("/api/plot")
 def plot_expression(
