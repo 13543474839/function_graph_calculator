@@ -21,8 +21,13 @@ def generate_points(
         [{"x": -10.0, "y": 100.0}, {"x": -9.96, "y": 99.2}, ...]
         y 为 NaN 的点会保留（前端需要用它来断开曲线）
     """
-    # 第1步：解析表达式，得到可调用的函数
-    f = parse_expression(expr_str)
+        # 第1步：解析表达式
+    try:
+        f = parse_expression(expr_str)
+    except Exception as e:
+        # 如果这里报错，说明真的是解析器的问题
+        raise ValueError(f"解析器报错: {e}") 
+
 
     # 第2步：计算 x 的步长（均匀采样）
     step = (x_max - x_min) / (num_points - 1)

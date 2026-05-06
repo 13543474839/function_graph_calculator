@@ -33,14 +33,21 @@ def parse_expression(expr_str: str):
     # 第3步：构建安全的执行环境（只有白名单里的函数，没有危险操作）
     safe_env = dict(SAFE_DICT)  # 复制一份，避免污染全局
 
-    # 第4步：试运行一次，验证表达式是否合法
+        # 第4步：试运行一次，验证表达式是否合法
     try:
-        # 用 eval 执行，但环境是受控的 safe_env
         code = compile(cleaned, "<expression>", "eval")
-        safe_env["x"] = 0  # 先给 x 一个默认值，看看能不能算出来
-        eval(code, {"__builtins__": {}}, safe_env)  # 先用 x=0 试一下
+        safe_env["x"] = 1.0  # ✅ 改成 1.0，避开绝大多数除零错误
+        eval(code, {"__builtins__": {}}, safe_env) 
+    except SyntaxError as e:
+        # 只有真正的语法错误（比如 "sin(("）才拦截
+        raise ValueError(f"表达式语法错误: {e}")
+    except (ZeroDivisionError, ValueError, OverflowError):
+        # ✅ 如果是数学算不出结果（比如 1/0, log(-1)），不算错，放行！
+        pass
     except Exception as e:
+        # 其他奇怪的错误才拦截
         raise ValueError(f"表达式无法解析: {e}")
+
 
     # 第5步：返回一个真正的函数，以后调用 f(3.14) 就能算出 y 值
     def f(x: float) -> float:
